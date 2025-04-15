@@ -49,7 +49,7 @@
       <div class="w-full h-[70px] flex justify-start items-center ">
         <div class="w-1/4 h-full p-2 border-[1px] border-gray-400 font-semibold">Status</div>
         <div class="w-3/4 h-full p-2 border-[1px] border-gray-400 flex justify-start items-start overflow-hidden overflow-y-auto relative group">
-          <select 
+          <!-- <select 
             v-model="status" 
             class="bg-inherit focus:outline-none"
             :class="{
@@ -70,7 +70,8 @@
             <p class="opacity-0 text-gray-600 hover:text-blue-500 group-hover:font-semibold group-hover:opacity-100">
               Update
             </p>
-          </button>
+          </button> -->
+          {{ data.status }}
         </div>
       </div>
 
@@ -109,7 +110,7 @@
         <div ref="chatContainer"
           class="w-full h-[calc(100%-130px)] overflow-hidden overflow-y-auto border-[1px] border-black rounded-md p-3 space-y-3"
         >
-          <div v-for="comment in comments.comments">
+          <div v-for="(comment, index) in comments.comments" :key="index">
             <div
               class="flex flex-col justify-start"
               :class="
@@ -222,14 +223,22 @@ export default {
 
     const taskDetail = async (taskId) => {
       const response = await getTaskDetail(taskId);
+
       data.value = response.task
+      console.log(":::::DATA TASK",response)
+
       comments.value = await getComments(taskId);
+
       console.log("comment", comments.value, typeof(comments.value))
+
       nextTick(() => {
         scrollToBottom();
       });
+
       Id.value = taskId;
+
       status.value = data.value.status
+
       socket.off("new-comment");
       socket.emit("join-task", taskId);
       socket.on("new-comment", (comment) => {

@@ -1,7 +1,13 @@
 <template>
   <div class="w-full h-full mx-auto p-4 overflow-hidden overflow-y-auto">
-    <h1 class="text-2xl font-semibold mb-4">Project Task Timeline</h1>
+    <div class="flex items-center justify-start">
+      <button @click.prevent="closeTask" class="p-3">
+          <IconArrowLeft size="30" class="text-neutral-950"/>
+      </button>
 
+      <h1 class="text-2xl text-center m-0 font-semibold mb-4">Project Task Timeline</h1>
+    </div>
+    
     <div class="task-list mb-8">
       <h2 class="text-xl font-semibold mb-4">Task List</h2>
       <table class="min-w-full table-auto border-collapse border border-gray-300">
@@ -19,7 +25,7 @@
         </thead>
         <tbody>
           <tr v-for="task in tasks" :key="task._id" class="odd:bg-white even:bg-gray-50">
-            <td class="px-4 py-2 border-b border-r">{{ task.name }}</td>
+            <td class="px-4 py-2 border-b border-r" @click.prevent="taskDetails(task._id)">{{ task.name }}</td>
             <td class="px-4 py-2 border-b border-r">
               <select 
                 v-model="task.status" 
@@ -36,7 +42,7 @@
                   <option value="DONE">DONE</option>
               </select>
             </td>
-            <!-- <td class="px-4 py-2 border-b border-r">{{ task.assignedTo.map(user => user.name).join(', ') }}</td> -->
+
             <td class="px-4 py-2 border-b border-r">
               <div class="w-full h-full flex justify-between">
                 <div>
@@ -56,6 +62,7 @@
                 
                 
                 <button 
+                  v-if="isManager"
                   @click="onDropdownSelectUser(task)" 
                   class="ml-2 relative"
                 >
@@ -65,7 +72,7 @@
                   <select 
                     v-if="dropdownOpenUser[task._id]" 
                     v-model="task.assignedTo" 
-                    class="w-[200px] max-h-[200px] border bg-white absolute top-10 right-5 z-[50]"
+                    class="w-[200px] max-h-[200px] rounded-xl p-1 border bg-white absolute top-10 right-5 z-[50]"
                     multiple
                     @change="UpdateTaskAssignedTo(task._id, task.assignedTo)"
                   >
@@ -81,18 +88,24 @@
             <!-- <td class="px-4 py-2 border-b border-r">{{ formatDate(task.startAt) }}</td> -->
             <td class="px-4 py-2 border-b border-r">
               <input
+                v-if="isManager"
                 type="datetime-local"
                 v-model="task.startAt"
                 @change="UpdateTaskStartDate(task._id, task.startAt)"
               />
+
+              <p v-else>{{ formatDate(task.startAt) }}</p>
             </td>
             <!-- <td class="px-4 py-2 border-b border-r">{{ formatDate(task.endAt) }}</td> -->
             <td class="px-4 py-2 border-b border-r">
               <input
+                v-if="isManager"
                 type="datetime-local"
                 v-model="task.endAt"
                 @change="UpdateTaskEndDate(task._id, task.endAt)"
               />
+
+              <p v-else>{{ formatDate(task.endAt) }}</p>
             </td>
             <td class="px-4 py-2 border-b border-r">
               <div class="w-full h-full flex justify-between">
@@ -112,6 +125,7 @@
                 
                 
                 <button 
+                  v-if="isManager"
                   @click="onDropdownSelect(task)" 
                   class="ml-2 relative"
                 >
@@ -121,7 +135,7 @@
                   <select 
                     v-if="dropdownOpen[task._id]" 
                     v-model="task.dependencies" 
-                    class="w-[200px] max-h-[200px] border bg-white absolute top-10 right-5 z-[50]"
+                    class="w-[200px] max-h-[200px] rounded-xl p-1 border bg-white absolute top-10 right-5 z-[50]"
                     multiple
                     @change="UpdateTaskDependencies(task._id, task.dependencies)"
                   >
@@ -137,6 +151,7 @@
 
             <td class="px-4 py-2 border-b border-r">
               <select 
+                v-if="isManager"
                 v-model="task.priority" 
                 class="bg-inherit focus:outline-none"
                 :class="{
@@ -150,10 +165,21 @@
                   <option value="MEDIUM">MEDIUM</option>
                   <option value="LOW">LOW</option>
               </select>
+              <div v-else class="bg-inherit focus:outline-none" 
+              :class="{
+                    'text-red-500': task.priority === 'HIGH',
+                    'text-green-500': task.priority === 'LOW',
+                    'text-blue-500': task.priority === 'MEDIUM',
+                }">{{task.priority}}</div>
             </td>
           </tr>
-           <tr class="odd:bg-white even:bg-gray-50">
-            <td class="px-4 py-2 border-b border-r"><button class="w-full h-full" @click="openTaskModal">New Task</button></td>
+           <tr v-if="isManager" class="odd:bg-white even:bg-gray-50">
+            <td class="px-4 py-2 border-b border-r">
+              <button class="w-full h-full flex justify-start items-center" @click="openTaskModal">
+                <IconPlus size="20" class="mr-2"/>
+                New Task
+              </button>
+            </td>
             <td class="px-4 py-2 border-b border-r">NONE</td>
             <td class="px-4 py-2 border-b border-r">NONE</td>
             <td class="px-4 py-2 border-b border-r">NONE</td>
@@ -166,7 +192,17 @@
     </div>
 
     <div class="timeline">
+      <div class="justify-between flex items-center">
       <h2 class="text-xl font-semibold mb-4">Task Timeline</h2>
+      <button @click.prevent="onShowFilter" class="p-3 relative">
+          <IconFilter size="30" class="text-neutral-950"/>
+          <div v-show="onShow" class="w-[200px] max-h-[200px] rounded-xl border bg-white absolute top-10 right-0 z-[50]">
+              <button @click.prevent="filterTasks(1)" class="w-full h-[40px] p-1 rounded-xl hover:bg-neutral-400">Name</button>
+              <button @click.prevent="filterTasks(2)" class="w-full h-[40px] p-1 rounded-xl hover:bg-neutral-400">Assigned To</button>
+              <button @click.prevent="filterTasks(3)" class="w-full h-[40px] p-1 rounded-xl hover:bg-neutral-400">Status</button>
+          </div>
+      </button>
+      </div>
       <div class="timeline-container relative w-full h-[600px] border border-gray-300 bg-gray-100 overflow-x-auto overflow-y-auto">
         <svg :width="`${widthSVG}px`" :height="`${heightSVG}px`">
           <defs>
@@ -250,8 +286,10 @@
         </svg>
 
 
-        <div v-for="task in tasks" :key="task._id" class="absolute h-8 rounded-md text-white text-center leading-8" :style="getTimelineStyle(task)">
-          <div class="px-2 font-bold">{{ task.name }}</div>
+        <div v-for="task in tasks" :key="task._id" class="absolute h-8 rounded-md text-white text-center leading-8 overflow-hidden" :style="getTimelineStyle(task)">
+          <div v-if="filter === 1" class="px-2 font-bold">{{ task.name }}</div>
+          <div v-if="filter === 2" class="px-2 font-bold">{{ task.assignedTo.map(user => user.name).join(', ') }}</div>
+          <div v-if="filter === 3" class="px-2 font-bold">{{ task.status }}</div>
         </div>
       </div>
     </div>
@@ -273,11 +311,22 @@ import { getProjectTask,
 
 import emitter from '@/emitter'
 
+import { IconArrowLeft, IconFilter, IconPlus } from '@tabler/icons-vue'
+
+import socket from "@/api/socket";
+
 export default {
+  components: {
+    IconArrowLeft, 
+    IconFilter,
+    IconPlus
+  },
   setup() {
     const dropdownOpen = ref({});
     const dropdownOpenUser = ref({});
     const dependencies = ref([]);
+
+    const isManager = ref(false)
 
     const widthSVG = ref(500)
     const heightSVG = ref(800)
@@ -289,9 +338,60 @@ export default {
 
     const users = ref([])
 
+    const onShow = ref(false)
+    const filter = ref(1)
+
     onMounted(async() => {
         init()
 
+        socket.on('task-updated-status', (data) => {
+          tasks.value = tasks.value.map(task => {
+            if (task._id === data.taskId) {
+              task.status = data.status
+            }
+            return task
+          })
+        })
+        socket.on('task-updated-priority', (data) => {
+          tasks.value = tasks.value.map(task => {
+            if (task._id === data.taskId) {
+              task.priority = data.priority
+            }
+            return task
+          })
+        })
+        socket.on('task-updated-dependencies', (data) => {
+          tasks.value = tasks.value.map(task => {
+            if (task._id === data.taskId) {
+              task.dependencies = data.dependencies
+            }
+            return task
+          })
+        })
+        socket.on('task-updated-assignedTo', (data) => {
+          tasks.value = tasks.value.map(task => {
+            if (task._id === data.taskId) {
+              task.assignedTo = data.assignedTo
+            }
+            return task
+          })
+        })
+        socket.on('task-updated-startAt', (data) => {
+          tasks.value = tasks.value.map(task => {
+            if (task._id === data.taskId) {
+              task.startAt = data.startAt
+            }
+            return task
+          })
+        })
+        socket.on('task-updated-endAt', (data) => {
+          tasks.value = tasks.value.map(task => {
+            if (task._id === data.taskId) {
+              task.endAt = data.endAt
+            }
+            return task
+          })
+        })
     })
 
         const init = () => {
@@ -299,14 +399,17 @@ export default {
                 switch (type) {
                     case 'PJ_DETAILS':
                       console.log(ev)
-                        const data = await getProjectTask(ev)
-                        const pj = await getMembersOfProject(ev)
-                        projectId.value = ev
+                        const data = await getProjectTask(ev.projectId)
+                        const pj = await getMembersOfProject(ev.projectId)
+                        projectId.value = ev.projectId
+                        isManager.value = ev.isManager
 
                         projectDetails.value = pj
                         tasks.value = data.tasks
 
-                        console.log(projectDetails.value)
+                        for(let task of tasks.value){
+                            socket.emit('join-task', task._id)
+                        }
 
                         getDependenciesLine()
 
@@ -352,6 +455,14 @@ export default {
       });
       dependencies.value = depLines;
     })
+
+    const filterTasks = (value) => {
+      filter.value = value
+    }
+
+    const onShowFilter = () => {
+      onShow.value = !onShow.value
+    }
 
     const updateTaskStatus = async(taskId, status) => {
       try {
@@ -571,14 +682,30 @@ export default {
 
     const formatDate = (date) => {
       const d = new Date(date);
-      return `${d.getHours()}:${d.getMinutes()} ${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+      const day = String(d.getDate()).padStart(2, '0'); 
+      const month = String(d.getMonth() + 1).padStart(2, '0'); 
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0'); 
+      const minutes = String(d.getMinutes()).padStart(2, '0'); 
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+
+    const taskDetails = (taskId) => {
+        emitter.emit('TASK_DETAILS', taskId)
+    }
+
+    const closeTask = () => {
+        emitter.emit('CLOSE_PJ_MANAGER')
     }
 
       return {
         dropdownOpen,
         dropdownOpenUser,
+        isManager,
         tasks,
         users,
+        projectDetails,
         getTimelineStyle,
         dependencies,
         onDropdownSelect,
@@ -594,7 +721,13 @@ export default {
         UpdateTaskAssignedTo,
         UpdateTaskStartDate,
         UpdateTaskEndDate,
-        formatDate
+        formatDate,
+        taskDetails,
+        closeTask,
+        filterTasks,
+        onShowFilter,
+        filter,
+        onShow
       }
   }
 };

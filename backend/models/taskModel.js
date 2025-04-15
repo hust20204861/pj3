@@ -20,6 +20,7 @@ const taskSchema = new mongoose.Schema({
     ref: "User",
   }
 ],
+  locked: { type: Boolean, default: false },
   status: {
     type: String,
     enum: ["TODO", "IN_PROGRESS", "DONE"],

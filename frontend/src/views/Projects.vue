@@ -4,19 +4,7 @@
             <ProjectHeader/>
         </template>
         <template v-slot:main>
-            <!-- <div class="top-[2%] absolute left-[2%] w-[90%] h-[5%]">
-
-                <button @click="selectTab('manager')" :class="{'font-bold text-gray-600 ml-4': activeTab === 'manager', 
-                                                                'font-bold text-gray-400 hover:text-gray-600 ml-4': activeTab !== 'manager'}">
-                                                                {{t('6')}}
-                                                            </button>
-                <button @click="selectTab('member')" :class="{'font-bold text-gray-600 ml-4': activeTab === 'member', 
-                                                              'font-bold text-gray-400 hover:text-gray-600 ml-4': activeTab !== 'member'}">
-                                                              {{t('7')}}
-                                                            </button>
-            </div> -->
-            
-            <div class="top-[2%] absolute left-[2%] w-[90%] h-[94%]">
+            <div class="top-[2%] absolute left-[2%] w-[97%] h-[94%]">
                 <ProjectComponent/>
             </div>
         </template>

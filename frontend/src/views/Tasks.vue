@@ -4,12 +4,7 @@
             <TaskHeader/>
         </template>
         <template v-slot:main>
-            <div class="top-[2%] absolute left-[2%] w-[90%] h-[5%]">
-                <p class="text-[24px] font-semibold">
-                    {{ $t('17') }}
-                </p>
-            </div>
-            <div class="top-[10%] absolute left-[2%] w-[90%] h-[89%]">
+            <div class="top-[2%] absolute left-[2%] w-[97%] h-[94%]">
                 <TaskComponent/>
             </div>
         </template>

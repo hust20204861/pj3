@@ -141,6 +141,16 @@ exports.updateTask = async (req, res) => {
             error: "Task not found",
           });
         }
+
+        if(task.locked){
+          return res.json({
+            status: "failed",
+            error: "Task can be updated only when it is not locked"
+          })
+        }
+
+        task.locked = true;
+        await task.save();
     
         const dependentTasks = await TaskModel.find({ '_id': { $in: task.dependencies } });
     
@@ -154,8 +164,15 @@ exports.updateTask = async (req, res) => {
         }
   
         task.status = status;
-  
         await task.save();
+
+        task.locked = false;
+        await task.save();
+
+        req.io.to(taskId).emit('task-updated-status', {
+          taskId: task._id,
+          status: task.status,
+        });
   
         return res.json({
           status: "success",
@@ -195,6 +212,11 @@ exports.updateTaskDependencies = async (req, res) => {
 
       await task.save();
 
+      req.io.to(taskId).emit('task-updated-dependencies', {
+        taskId: task._id,
+        dependencies: task.dependencies,
+      });
+
       return res.json({
         status: "success",
         message: "Update Task Success",
@@ -222,6 +244,12 @@ exports.updateTaskPriority = async (req, res) => {
   {
       new: true
   })
+
+      req.io.to(taskId).emit('task-updated-priority', {
+        taskId: task._id,
+        priority: priority,
+      });
+  
       return res.json({
         status: "success",
         message: "Update Task Success",
@@ -248,7 +276,24 @@ exports.updateTaskAssignedTo = async (req, res) => {
       },
   {
       new: true
+  })    
+  .populate({
+    path: "assignedTo",
+    select: "-password",
   })
+  .populate({
+    path: "projectId",
+    select: "_id name manager description",
+    populate: {
+      path: "manager",
+      select: "_id name username"
+    }
+  });
+
+      req.io.to(taskId).emit('task-updated-assignedTo', {
+        taskId: task._id,
+        assignedTo: task.assignedTo,
+      });
       return res.json({
         status: "success",
         message: "Update Task Success",
@@ -276,6 +321,11 @@ exports.updateTaskStartDate = async (req, res) => {
   {
       new: true
   })
+
+  req.io.to(taskId).emit('task-updated-startAt', {
+    taskId: task._id,
+    startAt: startAt,
+  });
       return res.json({
         status: "success",
         message: "Update Task Success",
@@ -309,6 +359,11 @@ exports.updateTaskEndDate = async (req, res) => {
       task.endAt = endAt; 
 
       await task.save();
+
+      req.io.to(taskId).emit('task-updated-endAt', {
+        taskId: task._id,
+        endAt: task.endAt,
+      });
       return res.json({
         status: "success",
         message: "Update Task Success",

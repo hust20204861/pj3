@@ -56,7 +56,10 @@ exports.getProjects = async (req, res) => {
 exports.getProjectsMember = async (req, res) => {
   try{
     console.log("ID", req.userAuth._id)
-    const projects = await ProjectModel.find({ members: req.userAuth._id })
+    const projects = await ProjectModel.find({ 
+      members: req.userAuth._id ,
+      manager: { $ne: req.userAuth._id } 
+    })
     // .populate({
     //     path: "manager",
     //     select: "_id name",
